@@ -1,24 +1,54 @@
 FROM node:22-slim
 
-# Enable corepack and prepare pnpm
+# Enable corepack and explicitly prepare pnpm version 9.15.9 which supports catalogs
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 WORKDIR /app
 
-# Copy all repository files (now containing both artifacts and libs)
+# Copy all repository files
 COPY . .
 
-# Explicitly ensure the workspace file covers all packages at the root level
+# Generate the correct pnpm-workspace.yaml file explicitly
 RUN cat > pnpm-workspace.yaml <<'WSEOF'
 packages:
   - "artifacts/*"
   - "lib/*"
 WSEOF
 
-# Remove old lockfile to prevent stale path resolution
+# Use Node.js to scan every package.json and replace any "catalog:" reference with "*" 
+# so pnpm v9.15.9 resolves them smoothly without throwing resolver errors
+RUN node -e ' \
+  const fs = require("fs"); \
+  function walk(dir) { \
+    let results = []; \
+    let list = fs.readdirSync(dir); \
+    list.forEach(file => { \
+      file = dir + "/" + file; \
+      let stat = fs.statSync(file); \
+      if (stat && stat.isDirectory()) { \
+        if (!file.includes("node_modules") && !file.includes(".git")) { \
+          results = results.concat(walk(file)); \
+        } \
+      } else { \
+        if (file.endsWith("package.json")) results.push(file); \
+      } \
+    }); \
+    return results; \
+  } \
+  walk(".").forEach(file => { \
+    let content = fs.readFileSync(file, "utf8"); \
+    let updated = content.replace(/"catalog:"/g, "\"*\""); \
+    if (content !== updated) { \
+      fs.writeFileSync(file, updated, "utf8"); \
+      console.log("Patched catalogs in: " + file); \
+    } \
+  }); \
+'
+
+# Remove old lockfile to ensure a clean slate
 RUN rm -f pnpm-lock.yaml
 
-# Install dependencies across the entire monorepo workspace
+# Install dependencies successfully across the entire workspace
 RUN pnpm install --no-frozen-lockfile
 
 # Expose port and start your app
