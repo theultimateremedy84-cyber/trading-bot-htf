@@ -5,12 +5,12 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy the entire repository into the container first (avoids missing file/path errors)
+# Copy the entire workspace files
 COPY . .
 
-# Install dependencies allowing a non-frozen lockfile pass
+# Install all workspace dependencies without strict lockfile failures
 RUN pnpm install --no-frozen-lockfile
 
-# Expose port and start your app
+# Expose port and run the app
 EXPOSE 3000
 CMD ["pnpm", "start"]
