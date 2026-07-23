@@ -5,24 +5,20 @@ RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 WORKDIR /app
 
-# Copy all project files
+# Copy all repository files (now containing both artifacts and libs)
 COPY . .
 
-# Generate a complete pnpm-workspace.yaml covering all local packages and subdirectories
+# Explicitly ensure the workspace file covers all packages at the root level
 RUN cat > pnpm-workspace.yaml <<'WSEOF'
 packages:
-  - "artifacts/api-server"
-  - "artifacts/dashboard"
-  - "lib/api-client-react"
-  - "lib/api-spec"
-  - "lib/api-zod"
-  - "lib/db"
+  - "artifacts/*"
+  - "lib/*"
 WSEOF
 
-# Remove old lockfile to clear any stale dependencies
+# Remove old lockfile to prevent stale path resolution
 RUN rm -f pnpm-lock.yaml
 
-# Install dependencies successfully across the monorepo workspace
+# Install dependencies across the entire monorepo workspace
 RUN pnpm install --no-frozen-lockfile
 
 # Expose port and start your app
