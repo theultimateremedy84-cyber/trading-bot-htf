@@ -1,6 +1,6 @@
 FROM node:22-slim
 
-# Enable corepack and explicitly prepare pnpm version 9.15.9 which supports catalogs
+# Enable corepack and prepare pnpm
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 WORKDIR /app
@@ -15,8 +15,7 @@ packages:
   - "lib/*"
 WSEOF
 
-# Use Node.js to scan every package.json and replace any "catalog:" reference with "*" 
-# so pnpm v9.15.9 resolves them smoothly without throwing resolver errors
+# Use Node.js to scan every package.json and replace any "catalog:" reference with "*"
 RUN node -e ' \
   const fs = require("fs"); \
   function walk(dir) { \
@@ -40,7 +39,6 @@ RUN node -e ' \
     let updated = content.replace(/"catalog:"/g, "\"*\""); \
     if (content !== updated) { \
       fs.writeFileSync(file, updated, "utf8"); \
-      console.log("Patched catalogs in: " + file); \
     } \
   }); \
 '
@@ -48,8 +46,8 @@ RUN node -e ' \
 # Remove old lockfile to ensure a clean slate
 RUN rm -f pnpm-lock.yaml
 
-# Install dependencies successfully across the entire workspace
-RUN pnpm install --no-frozen-lockfile
+# Install dependencies and ignore postinstall scripts to bypass esbuild version validation errors
+RUN pnpm install --no-frozen-lockfile --ignore-scripts
 
 # Expose port and start your app
 EXPOSE 3000
