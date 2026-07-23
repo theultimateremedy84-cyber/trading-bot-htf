@@ -43,14 +43,11 @@ RUN node -e ' \
   }); \
 '
 
-# Remove old lockfile
+# Remove old lockfile to ensure a clean slate
 RUN rm -f pnpm-lock.yaml
 
-# Install dependencies, bypassing broken binary scripts
+# Install dependencies and ignore postinstall scripts to bypass esbuild version validation errors
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
-
-# Build only the packages recursively without running the strict typecheck wrapper script
-RUN pnpm -r --if-present run build
 
 # Expose port and start your app
 EXPOSE 3000
