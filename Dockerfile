@@ -8,14 +8,18 @@ WORKDIR /app
 # Copy all project files
 COPY . .
 
-# Generate the pnpm-workspace.yaml configuration explicitly so local workspace packages resolve
+# Generate a complete pnpm-workspace.yaml covering all local packages and subdirectories
 RUN cat > pnpm-workspace.yaml <<'WSEOF'
 packages:
-  - "artifacts/*"
-  - "lib/*"
+  - "artifacts/api-server"
+  - "artifacts/dashboard"
+  - "lib/api-client-react"
+  - "lib/api-spec"
+  - "lib/api-zod"
+  - "lib/db"
 WSEOF
 
-# Remove old lockfile to ensure a clean sync
+# Remove old lockfile to clear any stale dependencies
 RUN rm -f pnpm-lock.yaml
 
 # Install dependencies successfully across the monorepo workspace
