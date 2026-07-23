@@ -1,0 +1,9 @@
+[phases.install]
+cmds = ["npm install -g pnpm", "pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = [
+  "pnpm --filter @workspace/api-spec run codegen",
+  "pnpm --filter @workspace/api-server run build",
+  "pnpm --filter @workspace/dashboard run build"
+]
